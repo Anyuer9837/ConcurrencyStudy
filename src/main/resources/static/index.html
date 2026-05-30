@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>用户热度查询与修改</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            text-align: center;
+            width: 320px;
+        }
+        h2 { color: #333; margin-bottom: 25px; }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px; /* 两个按钮之间的间距 */
+        }
+        .btn {
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+            font-weight: 500;
+        }
+        /* 查询按钮颜色 */
+        .btn-query { background-color: #2196F3; }
+        .btn-query:hover { background-color: #1E88E5; }
+
+        /* 加一按钮颜色 */
+        .btn-add { background-color: #4CAF50; }
+        .btn-add:hover { background-color: #45a049; }
+        .btn:active { transform: scale(0.98); }
+
+        .result {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px dashed #eee;
+            font-size: 18px;
+            color: #555;
+            font-weight: bold;
+        }
+        .hot-value {
+            color: #ff5722;
+            font-size: 26px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>并发研究测试端</h2>
+
+    <div class="btn-group">
+        <button class="btn btn-query" onclick="queryUserHot()">查询 UID 为 1 的热度</button>
+        <button class="btn btn-add" onclick="incrementUserHot()">点赞（热度 +1）</button>
+    </div>
+
+    <div class="result" id="resultBlock" style="display: none;">
+        当前用户 Hot 值: <span class="hot-value" id="hotValue">0</span>
+    </div>
+</div>
+
+<script>
+    // 1. 查询热度的函数
+    function queryUserHot() {
+        fetch('/user-hot/1')
+            .then(response => {
+                if (!response.ok) throw new Error('网络响应异常');
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.hot !== undefined) {
+                    document.getElementById('hotValue').innerText = data.hot;
+                    document.getElementById('resultBlock').style.display = 'block';
+                } else {
+                    alert('未找到该用户的数据');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('查询失败，请检查后端！');
+            });
+    }
+
+    // 2. 新增的：热度加 1 的函数
+    function incrementUserHot() {
+        fetch('/user-hot/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json' // 告诉后端我们发送的是 JSON 字符串
+            },
+            body: JSON.stringify({ uid: 1 }) // 把 uid 为 1 传过去，后端拿到后会自动查出旧值并 +1
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('网络响应异常');
+                return response.text(); // 因为后端返回的是 String "更新成功"
+            })
+            .then(message => {
+                if (message.includes("成功")) {
+                    // 体验优化：更新成功后，自动调用上面的查询方法，让页面上的数字实时变大！
+                    queryUserHot();
+                } else {
+                    alert('后端返回更新失败');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('加一失败，请检查后端控制台日志！');
+            });
+    }
+</script>
+
+</body>
+</html>
